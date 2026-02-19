@@ -1,6 +1,6 @@
 import numpy as np
 from simulation.observe import observe
-from evaluation.metrics import cRMSE, thresAcc, cep95
+from eval.eval import cRMSE, thresAcc, cep95
 
 def run_test_sQ(dim, p_exp, A, kalman_fn, sigma_R, sigma_vel, sigma_Q_vals, fps):
 
@@ -173,3 +173,4 @@ def run_test_sv(dim, p_exp, A, kalman_fn, sigma_R, sigma_v_vals, sigma_Q, n_test
         cep_vs_sV=cep_vs_sV,
         filt_vs_sV=filt_vs_sV
     )
+
