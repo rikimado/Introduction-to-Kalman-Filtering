@@ -2,20 +2,8 @@ import numpy as np
 
 def kalmanFilter2D(fps, A, p_obs, R, sigma_v0, sigma_Q):
     """
-    INPUTS
-    - fps: frame per second (scalar)
-    - A: state transition matrix (state_len, state_len)
-    - p_obs: observations array (N,2)
-    - R: sensor error cov. matrix  (2,2)
-    - sigma_v0 ............ (scalar)
-    - sigma_Q: ........... (scalar)
-
-    OUTPUTS
-    - prior_preds: (N,state_len) predicted states
-    - P_prior: (N,state_len,state_len) predicted covariance
-    - filt_preds: (N,state_len) filtered states
-    - P_post: (N,state_len,state_len) updated covariance
-
+    INPUTS: see 1D case
+    OUTPUTS: see 1D case
     """
     dt = 1 / fps
     Nframes = len(p_obs)
@@ -48,23 +36,12 @@ def kalmanFilter2D(fps, A, p_obs, R, sigma_v0, sigma_Q):
     else:
         raise ValueError("Unsupported state dimension")
 
-    # Prediction prior to observation update
     s_pred = np.zeros(state_len)
-    
-    # first prediction = first observation
     s_pred[0:2] = p_obs[0]
-
-    # Store predictions before updates
     prior_preds = np.zeros((Nframes, state_len))
     prior_preds[0] = s_pred
-
-    # Predictions updated 
     filt_preds = np.zeros((Nframes, state_len))
-
-    # first = prior since the difference with the prediction is null as s_pred[0] == first obervation
     filt_preds[0] = prior_preds[0]
-
-    # Estimation uncertainty covariance
     P = np.zeros((state_len, state_len)) 
     P[0,0] = R[0,0]       # initial x uncertainty = sensor error var_x
     P[1,1] = R[1,1]       # initial y uncertainty = sensor error var_y
@@ -124,3 +101,4 @@ def kalmanFilter2D(fps, A, p_obs, R, sigma_v0, sigma_Q):
             P_post[k] = P
 
     return prior_preds, P_prior, filt_preds, P_post
+
