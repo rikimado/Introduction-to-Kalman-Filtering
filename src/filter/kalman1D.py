@@ -3,12 +3,12 @@ import numpy as np
 def kalmanFilter1D(fps, A, p_obs, R, sigma_v0, sigma_Q):
     """
     INPUTS
-    - fps: frame per second
+    - fps: frames per second
     - A: state transition matrix
     - p_obs: (N,) observations array
     - R: sensor error covariance (std^2)
-    - sigma_v0
-    - sigma_Q
+    - sigma_v0: uncertainty about the first velocity value
+    - sigma_Q: process noise uncertainty
 
     OUTPUTS
     - prior_preds: (N,state_len) predicted states
@@ -41,7 +41,7 @@ def kalmanFilter1D(fps, A, p_obs, R, sigma_v0, sigma_Q):
     else:
         raise ValueError("Unsupported state dimension")
 
-    # Prediction prior to observation update
+    # Prediction before observation update
     s_pred = np.zeros(state_len)
     
     # first prediction = first observation
@@ -79,26 +79,22 @@ def kalmanFilter1D(fps, A, p_obs, R, sigma_v0, sigma_Q):
         prior_preds[k] = s_pred
 
         # Predict error covariance at frame k:
-        # Propaghi l’incertezza nel tempo + aggiungi rumore di processo.
-        # - Più tempo passa → meno sono sicuro → P cresce
-    
         P = A @ P @ A.T + Q
         P_prior[k]=P
 
         # Retrieve observation at frame k
         zk = p_obs[k]
-        
-        if np.isnan(zk):            # Missing observation → skip update
-            filt_preds[k] = s_pred  # prediction only
-            P_post[k] = P           # covariance stays as predicted
+
+        # Missing observation → skip update: 
+        # - keep predicted state and error covariance 
+        if np.isnan(zk):            
+            filt_preds[k] = s_pred  
+            P_post[k] = P           
         else:
-            # Compute the difference (innovation/residual) between the measurement 
-            # and the predicted state projected into the measurement 
-            # space (H @ s_pred), in this case only the position
-            # it expresses Quanto ho sbagliato la previsione
+            # Difference between the measurement and the predicted state 
             diff = zk - H @ s_pred
 
-            # difference covariance, meaning how much I trust the difference
+            # Covariance of difference (how much I trust the difference)
             S = H @ P @ H.T + R
 
             # Kalman Gain
@@ -108,11 +104,13 @@ def kalmanFilter1D(fps, A, p_obs, R, sigma_v0, sigma_Q):
             s_pred = s_pred + K @ diff
             filt_preds[k] = s_pred
 
-            # Update error covariance
+            # Update also error covariance
             P = (I - K @ H) @ P @ (I - K @ H).T + K @ R @ K.T
             P_post[k] = P
-
+    
+    # Retrieve diagonals (var) of matrix P for plotting
     sigma_prior = np.sqrt(P_prior[:,0,0])
     sigma_post = np.sqrt(P_post[:,0,0])
     
     return prior_preds, sigma_prior, filt_preds, sigma_post
+
