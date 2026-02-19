@@ -2,8 +2,8 @@ import numpy as np
 
 def kalmanFilter2D(fps, A, p_obs, R, sigma_v0, sigma_Q):
     """
-    INPUTS: see 1D case
-    OUTPUTS: see 1D case
+    INPUTS: see kalmanFilter 1D case
+    OUTPUTS: see kalmanFilter 1D case
     """
     dt = 1 / fps
     Nframes = len(p_obs)
@@ -98,5 +98,6 @@ def kalmanFilter2D(fps, A, p_obs, R, sigma_v0, sigma_Q):
             P_post[k] = P
 
     return prior_preds, P_prior, filt_preds, P_post
+
 
 
