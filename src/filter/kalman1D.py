@@ -74,23 +74,24 @@ def kalmanFilter1D(fps, A, p_obs, R, sigma_v0, sigma_Q):
 
     for k in range(1, Nframes):
         
-        # Predict state at frame k based on the motion model
+        # Predict state and error covariance matrix at frame k based only on the assumed model
         s_pred = A @ s_pred
-        prior_preds[k] = s_pred
-
-        # Predict error covariance at frame k:
         P = A @ P @ A.T + Q
+        
+        # store
+        prior_preds[k] = s_pred
         P_prior[k]=P
 
         # Retrieve observation at frame k
         zk = p_obs[k]
 
-        # Missing observation → skip update: 
-        # - keep predicted state and error covariance 
-        if np.isnan(zk):            
+        # Missing observation → skip update and store state and error covariance predicted
+        if np.isnan(zk):
+           
             filt_preds[k] = s_pred  
             P_post[k] = P           
         else:
+            
             # Difference between the measurement and the predicted state 
             diff = zk - H @ s_pred
 
@@ -102,10 +103,10 @@ def kalmanFilter1D(fps, A, p_obs, R, sigma_v0, sigma_Q):
 
             # Update state estimate through the weighted difference
             s_pred = s_pred + K @ diff
-            filt_preds[k] = s_pred
-
-            # Update also error covariance
             P = (I - K @ H) @ P @ (I - K @ H).T + K @ R @ K.T
+
+            # store
+            filt_preds[k] = s_pred
             P_post[k] = P
     
     # Retrieve diagonals (var) of matrix P for plotting
@@ -113,4 +114,5 @@ def kalmanFilter1D(fps, A, p_obs, R, sigma_v0, sigma_Q):
     sigma_post = np.sqrt(P_post[:,0,0])
     
     return prior_preds, sigma_prior, filt_preds, sigma_post
+
 
