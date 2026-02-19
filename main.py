@@ -5,7 +5,11 @@ dim = 2     # 1D or 2D
 fps = 30 
 L = 10e-2   # total travelled path [m]
 v0 = 0.05   # initial true velocity [m/s]
-a0 = 5e-2  # true acceleration [m/s^2]
+a0 = 5e-2   # true acceleration [m/s^2]
+
+sigma_vel = 0.0*abs(v0)
+scaling = np.arange(0.0, 10.01, 0.01)
+sigma_Q_vals = scaling * abs(a0)
 
 if dim == 1:
     from simulation.propagate1D import propagate 
@@ -16,27 +20,12 @@ if dim == 1:
     p_exp, A = propagate(fps, L, p0, v0, motion="CA", acc=a0)
 
 else:
-    
     from simulation.propagate2D import propagate 
     from filter.kalman2D import kalmanFilter2D
-
     p0 = [0.0, 0.0]                 
     sigma_R = np.array([2, 2])*1e-3
     kalman_fn = kalmanFilter2D
-    p_exp, A = propagate(fps, L, p0, v_mag=v0, motion="CA", a_mag=a0, traj_shape="elbow", elbow_frame=int(0.5*fps))
-
-
-scaling = np.arange(0.0, 10.01, 0.01)
-
-# Rule of thumb: 
-#   -σ_v ~ 5–10% of v0, 
-#   -σ_acc ~ 5–20% of a0
-
-#sigma_Q = 0.0*abs(a0)
-#sigma_v_vals = percentages * abs(v0)
-
-sigma_vel = 0.0*abs(v0)
-sigma_Q_vals = scaling * abs(a0)
+    p_exp, A = propagate(fps, L, p0, v_mag=v0, motion="CV", a_mag=a0, traj_shape="elbow", elbow_frame=int(0.5*fps))
 
 results = run_test_sQ(
     dim=dim,
@@ -101,8 +90,9 @@ plt.legend(handles=legend_elements)
 plt.grid(True, alpha=0.3)
 plt.show()
 
-# 2) Metrics vs sigma_Q of for the best test (lowest mean CRMSE)
-# CRMSE in mm
+# 2) Error metrics vs sigma_Q
+
+# CRMSE [mm]
 plt.figure(figsize=(6,5))
 plt.plot(scaling, crmse_vs_sQ*1e3, label="filters")
 plt.axhline(obs_crmse*1e3, color='r', linestyle='--', lw=1.5, label="obs")
@@ -131,7 +121,7 @@ plt.legend(loc="upper right")
 plt.tight_layout()
 plt.show()
 
-# CEP95 in mm
+# CEP95 [mm]
 plt.figure(figsize=(7,5))
 plt.plot(scaling, cep_vs_sQ*1e3, label="filters")
 plt.axhline(obs_cep*1e3, color='r', linestyle="--", label="obs")
@@ -160,7 +150,7 @@ plt.legend(loc="upper right")
 plt.tight_layout()
 plt.show()
 
-# Accuracy %
+# Accuracy [%]
 plt.figure(figsize=(7,5))
 plt.plot(scaling, acc_vs_sQ*100, label='filters')
 plt.axhline(obs_acc*100, color='r', linestyle="--", label="obs")
@@ -188,7 +178,7 @@ plt.legend(loc="lower right")
 plt.tight_layout()
 plt.show()
 
-# 4) Filtration results + best filter
+# 4) Filtration results + best filter highlighted
 best_idx = np.argmin(crmse_vs_sQ)
 best_sigmaQ = sigma_Q_vals[best_idx]
 best_filter = filt_vs_sQ[best_idx]
@@ -219,13 +209,12 @@ else:
 
 # dummy line for the legend
 plt.plot([], [], 'r', alpha=0.3, label='test filters')
-plt.grid(True, alpha=0.3)
 
+plt.grid(True, alpha=0.3)
 plt.legend()
 plt.show()
 
-# 5) gt + obs + best filter
-
+# 5) gt + obs + best filter based on cRMSE
 plt.figure(figsize=(10,4))
 if dim == 1:
     plt.plot(t, p_exp[:, 0]*1e3, 'b--', linewidth=1, label = "ground truth")
@@ -245,18 +234,3 @@ else:
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.show()
-
-
-'''
-best_sv_vals = results["best_sv_vals"]
-global_best_filt = results["global_best_filt"]
-global_best_p_obs = results["global_best_p_obs"]
-crmse_vs_sV = results["crmse_vs_sV"]
-cep_vs_sV = results["cep_vs_sV"]
-filt_vs_sV = results["filt_vs_sV"]
-first_cross_sv_vals=results["first_cross_sv_vals"]
-cep_obs_list=results["cep_obs_list"]
-global_best_crmse=results["global_best_crmse"]
-accuracy_vs_sV=results["accuracy_vs_sV"]
-
-'''
