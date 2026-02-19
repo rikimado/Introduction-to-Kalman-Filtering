@@ -38,10 +38,13 @@ def kalmanFilter2D(fps, A, p_obs, R, sigma_v0, sigma_Q):
 
     s_pred = np.zeros(state_len)
     s_pred[0:2] = p_obs[0]
+    
     prior_preds = np.zeros((Nframes, state_len))
     prior_preds[0] = s_pred
+    
     filt_preds = np.zeros((Nframes, state_len))
     filt_preds[0] = prior_preds[0]
+    
     P = np.zeros((state_len, state_len)) 
     P[0,0] = R[0,0]       # initial x uncertainty = sensor error var_x
     P[1,1] = R[1,1]       # initial y uncertainty = sensor error var_y
@@ -62,43 +65,38 @@ def kalmanFilter2D(fps, A, p_obs, R, sigma_v0, sigma_Q):
 
     for k in range(1, Nframes):
         
-        # Predict state at frame k based on the motion model
+        # Predict state and error covariance at frame k
         s_pred = A @ s_pred
-        prior_preds[k] = s_pred
-
-        # Predict error covariance at frame k:
-        # Propaghi l’incertezza nel tempo + aggiungi rumore di processo.
-        # - Più tempo passa → meno sono sicuro → P cresce
-    
         P = A @ P @ A.T + Q
+
+        # store
+        prior_preds[k] = s_pred
         P_prior[k]=P
 
         # Retrieve observation at frame k
         zk = p_obs[k]
 
-        if np.isnan(zk).any():            # Missing observation → skip update
-            filt_preds[k] = s_pred  # prediction only
-            P_post[k] = P           # covariance stays as predicted
+        if np.isnan(zk).any():
+            
+            # store initial estimation
+            filt_preds[k] = s_pred
+            P_post[k] = P
         else:
-            # Compute the difference (innovation/residual) between the measurement 
-            # and the predicted state projected into the measurement 
-            # space (H @ s_pred), in this case only the position
-            # it expresses Quanto ho sbagliato la previsione
+            # Compute the difference
             diff = zk - H @ s_pred
-
-            # difference covariance, meaning how much I trust the difference
             S = H @ P @ H.T + R
 
-            # Kalman Gain
+            # Gain
             K = P @ H.T @ np.linalg.inv(S)
 
-            # Update state estimate through the weighted difference
+            # Update state and error covariance
             s_pred = s_pred + K @ diff
-            filt_preds[k] = s_pred
-
-            # Update error covariance
             P = (I - K @ H) @ P @ (I - K @ H).T + K @ R @ K.T
+            
+            # store
+            filt_preds[k] = s_pred
             P_post[k] = P
 
     return prior_preds, P_prior, filt_preds, P_post
+
 
